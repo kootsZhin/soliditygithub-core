@@ -17,5 +17,3 @@
 ```bash
 go run main.go
 ```
-
-The automation is handled by github actions.
