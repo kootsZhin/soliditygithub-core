@@ -12,6 +12,7 @@ import (
 	"github.com/coreos/pkg/flagutil"
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
+	"golang.org/x/oauth2"
 	"github.com/google/go-github/v48/github"
 	"github.com/joho/godotenv"
 )
@@ -126,10 +127,21 @@ func getTwitterClient(_consumerKey string, _consumerSecret string, _accessToken 
 	return twitter.NewClient(httpClient)
 }
 
+func getGithubClient(_accessToken string) *github.Client {
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: _accessToken},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+
+	return github.NewClient(tc)
+}
 func main() {
 	godotenv.Load()
 
-	githubClient := github.NewClient(nil)
+	githubAccessToken := os.Getenv("GITHUB_ACCESS_TOKEN")
+
+	githubClient := getGithubClient(githubAccessToken)
 
 	consumerKey := os.Getenv("TWITTER_CONSUMER_KEY")
 	consumerSecret := os.Getenv("TWITTER_CONSUMER_SECRET")
