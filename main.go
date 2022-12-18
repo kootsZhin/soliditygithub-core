@@ -139,7 +139,7 @@ func getGithubClient(_accessToken string) *github.Client {
 func main() {
 	godotenv.Load()
 
-	githubAccessToken := os.Getenv("GITHUB_ACCESS_TOKEN")
+	githubAccessToken := os.Getenv("API_GITHUB_ACCESS_TOKEN")
 
 	githubClient := getGithubClient(githubAccessToken)
 
