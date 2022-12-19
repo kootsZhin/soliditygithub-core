@@ -12,9 +12,9 @@ import (
 	"github.com/coreos/pkg/flagutil"
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
-	"golang.org/x/oauth2"
 	"github.com/google/go-github/v48/github"
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
 )
 
 func getTimeRange(duration string) (string, string) {
@@ -46,23 +46,32 @@ func fetchLatestRepos(client *github.Client, language string, duration string) *
 	return res
 }
 
-func isRepoFiltered(repo *github.Repository) bool {
-	// custom filter logic, set to star > 5 for now for simplicity
-	return *repo.StargazersCount > 5
+func isRepoFiltered(repo *github.Repository, commit *github.RepositoryCommit) bool {
+	// custom filter logic, set to star > 10 for now for simplicity
+	stargazerFilter := repo.GetStargazersCount() > 10
+
+	author := commit.GetAuthor()
+	nonUserFilter := author.GetLogin() != ""
+
+	return stargazerFilter && nonUserFilter
 }
 
-func getCommitMessase(client *github.Client, owner string, name string, branch string) (string, string) {
+func getLastCommit(client *github.Client, owner string, name string, branch string) *github.RepositoryCommit {
 	defaultBranch, _, err := client.Repositories.GetBranch(context.Background(), owner, name, branch, false)
 	if err != nil {
-		return "", ""
+		return nil
 	}
 
-	commit := defaultBranch.GetCommit()
+	return defaultBranch.GetCommit()
+}
 
-	commitMessage := strings.Split(*commit.Commit.Message, "\n")[0]
-	commitAuthor := *commit.Commit.Author.Name
+func getCommitMessage(commit *github.RepositoryCommit) (string, string) {
+	commitMessage := strings.Split(commit.GetCommit().GetMessage(), "\n")[0]
 
-	return commitMessage, commitAuthor
+	commitAuthor := commit.GetAuthor()
+	authorName := commitAuthor.GetLogin()
+
+	return commitMessage, authorName
 }
 
 func trimString(str string, length int) string {
@@ -72,7 +81,7 @@ func trimString(str string, length int) string {
 	return str
 }
 
-func formatTweet(client *github.Client, repo *github.Repository) string {
+func formatTweet(repo *github.Repository, commit *github.RepositoryCommit) string {
 	owner := repo.GetOwner().GetLogin()
 	name := repo.GetName()
 	stars := repo.GetStargazersCount()
@@ -84,16 +93,16 @@ func formatTweet(client *github.Client, repo *github.Repository) string {
 		description += "\n"
 	}
 
-	commitMessage, commitAuthor := getCommitMessase(client, owner, name, repo.GetDefaultBranch())
+	commitMessage, commitAuthor := getCommitMessage(commit)
 
 	// refernece: https://stackoverflow.com/questions/11123865/format-a-go-string-without-printing#:~:text=2.%20Complex%20strings%20(documents)
 	headingTmpl := "%s/%s (★%d) (%d forks)\n"
 	commitTmpl := "Last commit: %s by %s\n"
 
 	heading := fmt.Sprintf(headingTmpl, owner, name, stars, forks) + description
-	commit := fmt.Sprintf(commitTmpl, commitMessage, commitAuthor)
+	commitMsg := fmt.Sprintf(commitTmpl, commitMessage, commitAuthor)
 
-	return heading + "\n" + commit + "\n" + url + "\n"
+	return heading + "\n" + commitMsg + "\n" + url + "\n"
 }
 
 func tweet(client *twitter.Client, message string) {
@@ -101,7 +110,6 @@ func tweet(client *twitter.Client, message string) {
 }
 
 func print(client *twitter.Client, message string) {
-	// client.Statuses.Update(message, nil)
 	fmt.Println(message)
 	fmt.Println("====================================\n")
 }
@@ -156,9 +164,10 @@ func main() {
 	// 2. loop throught the list and filter out the repo that worth to be noticed (e.g. stars > x)
 	//TODO: only the first 100 results is looped for now
 	for _, repo := range repos.Repositories {
-		if isRepoFiltered(repo) {
+		commit := getLastCommit(githubClient, repo.GetOwner().GetLogin(), repo.GetName(), repo.GetDefaultBranch())
+		if isRepoFiltered(repo, commit) {
 			// 3. format the info and ping on twitter
-			tweet(twitterClient, formatTweet(githubClient, repo))
+			tweet(twitterClient, formatTweet(repo, commit))
 		}
 	}
 }
