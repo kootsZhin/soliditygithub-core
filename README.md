@@ -10,6 +10,9 @@
     <a href="https://twitter.com/soliditygithub">
         <img src="https://img.shields.io/twitter/url?label=SolidityGithub&style=social&url=https%3A%2F%2Ftwitter.com%2FSolidityGithub">
     </a>
+    <a href="https://github.com/soliditygithub/core/actions/workflows/tweet.yml">
+        <img src="https://github.com/soliditygithub/core/actions/workflows/tweet.yml/badge.svg">
+    </a>
 </p>
 
 ## Local development
