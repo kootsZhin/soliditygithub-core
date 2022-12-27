@@ -159,7 +159,7 @@ func main() {
 	twitterClient := getTwitterClient(consumerKey, consumerSecret, accessToken, accessSecret)
 
 	// 1. fetch latest updated repo within certain time
-	repos := fetchLatestRepos(githubClient, "solidity", "3h")
+	repos := fetchLatestRepos(githubClient, "solidity", "8h")
 
 	// 2. loop throught the list and filter out the repo that worth to be noticed (e.g. stars > x)
 	//TODO: only the first 100 results is looped for now
