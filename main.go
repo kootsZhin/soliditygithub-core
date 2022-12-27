@@ -53,7 +53,9 @@ func isRepoFiltered(repo *github.Repository, commit *github.RepositoryCommit) bo
 	author := commit.GetAuthor()
 	nonUserFilter := author.GetLogin() != ""
 
-	return stargazerFilter && nonUserFilter
+	privateRepoFilter := !repo.GetPrivate()
+
+	return stargazerFilter && nonUserFilter && privateRepoFilter
 }
 
 func getLastCommit(client *github.Client, owner string, name string, branch string) *github.RepositoryCommit {
